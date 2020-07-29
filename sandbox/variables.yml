@@ -11,9 +11,7 @@ zbx_buffer_send: '5'
 zbx_buffer_size: '100'
 zbx_max_line_per_seconds: '100'
 zbx_timeout: '3'
-zbx_include_dir: '/etc/zabbix/zabbix_agentd.d'
-zbx_include_files: "{{ zbx_include_dir }}/*.conf"
-zbx_bkp_dir: "./bkp/{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}"
+zbx_include_files: '/etc/zabbix/zabbix_agentd.d/*.conf'
 zbx_packages:
   - zabbix-sender
   - zabbix-agent

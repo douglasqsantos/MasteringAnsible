@@ -1,0 +1,6 @@
+---
+ansible_user: douglas
+ansible_port: 22
+ansible_become: true
+ansible_become_pass: passw0rd
+...

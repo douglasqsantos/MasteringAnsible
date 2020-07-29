@@ -1,0 +1,3 @@
+---
+zbx_release: https://repo.zabbix.com/zabbix/4.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_4.4-1+{{ ansible_distribution_release }}_all.deb
+...

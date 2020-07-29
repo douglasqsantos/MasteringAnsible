@@ -86,18 +86,41 @@
         enabled: yes
         masked: no
 
-    - name: Find Custom files for Zabbix Agent
+    ## List all the files to handle
+    - name: Find Zabbix Agent Files
       find:
-        paths: /etc/zabbix/zabbix_agentd.d
+        paths: /etc/zabbix/
+        file_type: file
         patterns: '*'
+        recurse: yes
       register: files_to_delete
-      
+
+    # - name: Check the files to Handle
+    #   debug:
+    #     var: item.path
+    #   with_items: "{{ files_to_delete.files }}"
+
+    ## Backup the Files before delete
+    - name: Backup Find Zabbix Agent Files
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ zbx_bkp_dir }}"
+      with_items: "{{ files_to_delete.files }}"
+    
+    ## Remove Custom files
     - name: Remove Custom files for Zabbix Agent
       file:
         path: "{{ item.path }}"
         state: absent
       with_items: "{{ files_to_delete.files }}"
 
+    ## Creating the Custom File Directory
+    - name: Creating the Zabbix Agent Custom File Directory
+      file:
+        path: "{{ zbx_include_dir }}"
+        state: directory
+
+    ## Configure the Zabbix Agent
     - name: Template zabbix_agentd.conf
       template:
         src: templates/zabbix_agentd.conf.j2

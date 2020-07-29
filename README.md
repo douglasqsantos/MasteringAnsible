@@ -234,7 +234,7 @@ ansible all --list-hosts
 ## Mastering Ansible examples Repository
 - Available on GitHub from the following url:
   - https://github.com/spurin/masteringansible
-- Clone to control host with the command 
+- Clone to control host with the command
   - git clone https://github.com/spuring/masteringansible.git
 
 
@@ -878,16 +878,386 @@ centos01 | SUCCESS => {
 }
 ```
 
+## Ansible Playbooks, Advanced topics
+- Ansible playbook modules
+- Dynamic inventories
+- Register and when
+- Looping
+- Asynchronous and Parallel
+- Task delegation
+- Magic variables
+- Blocks
+- Using the Ansible Vault
+- Creating custom modules
+- Creating plugins
 
 
-## TODO 
+## Ansible Playbook Modules
+- Ansible playbook modules
+- set_fact
+- pause
+- prompt
+- wait_for
+- assemble
+- add_host
+- group_by
+- fetch
+
+Start the zabbix-agent
+```json
+ansible ubuntu01 -m service -a 'name=zabbix-agent state=started'
+ubuntu01 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "name": "zabbix-agent",
+    "state": "started",
+    "status": {
+        "ActiveEnterTimestamp": "Tue 2020-07-28 23:47:00 UTC",
+        "ActiveEnterTimestampMonotonic": "37526037683",
+        "ActiveExitTimestamp": "Tue 2020-07-28 23:47:00 UTC",
+        "ActiveExitTimestampMonotonic": "37525981837",
+        "ActiveState": "active",
+        "After": "syslog.target network.target system.slice sysinit.target systemd-journald.socket basic.target",
+        "AllowIsolate": "no",
+        "AmbientCapabilities": "",
+        "AssertResult": "yes",
+        "AssertTimestamp": "Tue 2020-07-28 23:47:00 UTC",
+        "AssertTimestampMonotonic": "37525995710",
+        "Before": "multi-user.target shutdown.target",
+        "BlockIOAccounting": "no",
+        "BlockIOWeight": "[not set]",
+        "CPUAccounting": "no",
+        "CPUQuotaPerSecUSec": "infinity",
+        "CPUSchedulingPolicy": "0",
+        "CPUSchedulingPriority": "0",
+        "CPUSchedulingResetOnFork": "no",
+        "CPUShares": "[not set]",
+        "CPUUsageNSec": "[not set]",
+        "CPUWeight": "[not set]",
+        "CacheDirectoryMode": "0755",
+        "CanIsolate": "no",
+        "CanReload": "no",
+        "CanStart": "yes",
+        "CanStop": "yes",
+[...]
+```
+
+## Dynamic Inventories
+- Dynamic inventories
+- The requirements of dynamic inventories
+- How to create a dynamic inventory with minimal scripting
+- How to interrogate a dynamic inventory
+- The use of the Ansible development tools for testing dynamic inventories
+- Performance enhancements through the use of _meta
+- The use of the ansible python framework for dynamic inventories
+
+## Dynamic Inventory Requirements
+- Needs to be an executable file, can be written in any language, providing that it can be executed from the command line
+- Accepts the command line options of --list, and --host hostname
+- Returns JSON encoded dictionary of inventory content when used with --list
+- Returns a basic JSON encoded dictionary structure for --host <hostname>
+
+## Register and When
+- Register and When
+- How to register output with the register directive
+- How to use registered output
+- How to work around differences with registered output
+- Filters, that relate to registered content
+
+Getting the information about the ansible_distribution
+```json
+ansible all -m setup -a filter='ansible_distribution*'
+```
+
+Getting the information about the hardware
+```json
+ansible all -m setup -a 'gather_subset=hardware'
+```
+
+## Looping
+- Lopping
+- with_items
+- with_dict
+- with_subelements
+- with_together
+- with_sequence ... many other loops ... with_random_choice
+- until
+
+## Asynchronous and Parallel
+- Asynchronous and Parallel
+- Playbook performance and bottlenecks
+- Polling
+- Asynchronous job identifiers
+- Asynchronous status handling
+- Serial execution
+- Batch execution
+- Alternative execution strategies
+
+## Task Delegation
+- Task delegation
+- How we can delegate specific tasks, for execution on specific targets
+
+
+## Magic Variables
+- Magic variables
+- Techniques and tricks for accessing and uncovering variables and magic variables through the use of Ansible playbooks
+
+## Blocks
+- blocks
+- How to group multiple tasks, into a single block
+- Rescue
+- Always
+
+## Using the Ansible Vault
+- Using the Ansible Vault
+- Encrypting/decrypting variables
+- Encrypting and decrypting files
+- Re-encrypting data
+- Using multiple Vaults
+
+Creating the vault for a variable
+```json
+ansible-vault encrypt_string --ask-vault-pass --name 'ansible_become_pass' 'passw0rd'
+New Vault password:
+Confirm New Vault password:
+ansible_become_pass: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          31306130613165653366613531346463643135373532306431343131656531333137303137363730
+          3332333634333830336635316230306163303939613234380a313265623331616431353439323161
+          35326262343539636339643864373036333736643362316438623766626434333938653938623439
+          3738333230353135620a356433383833333039646261613866353463353433316664393535623164
+          6564
+Encryption successful
+```
+
+Now after change the ansible_become_pass in the linux.yaml let's give it a try
+```json
+ansible --ask-vault-pass  all -m ping -o
+Vault password:
+mac | SUCCESS => {"ansible_facts": {"discovered_interpreter_python": "/usr/bin/python"},"changed": false,"ping": "pong"}
+ubuntu01 | SUCCESS => {"ansible_facts": {"discovered_interpreter_python": "/usr/bin/python3"},"changed": false,"ping": "pong"}
+centos01 | SUCCESS => {"ansible_facts": {"discovered_interpreter_python": "/usr/libexec/platform-python"},"changed": false,"ping": "pong"}
+```
+
+We can encrypt a vault vars
+```json
+ansible-vault encrypt --ask-vault-pass external_vault_vars.yml
+New Vault password:
+Confirm New Vault password:
+Encryption successful
+```
+
+Now we can execute the playbook with the vault
+```json
+ansible-playbook --ask-vault-pass vault_playbook.yml
+Vault password:
+
+PLAY [linux] **************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************
+ok: [ubuntu01]
+ok: [centos01]
+
+TASK [Show external_vault_var] ********************************************************************************************************************************
+ok: [centos01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+ok: [ubuntu01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+
+PLAY RECAP ****************************************************************************************************************************************************
+centos01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+ubuntu01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+We can decrypt the file
+```json
+ansible-vault decrypt --ask-vault-pass  external_vault_vars.yml
+Vault password:
+Decryption successful
+```
+
+Let's encrypt the vars again to rekey it
+```json
+ansible-vault encrypt --ask-vault-pass external_vault_vars.yml
+New Vault password:
+Confirm New Vault password:
+Encryption successful
+```
+
+Executing the rekey
+```json
+ansible-vault rekey --ask-vault-pass external_vault_vars.yml
+Vault password:
+New Vault password:
+Confirm New Vault password:
+Rekey successful
+```
+
+We can check the value of the become password via ansible
+```json
+ansible ubuntu01 --ask-vault-pass -m debug -a 'var=ansible_become_pass'
+Vault password:
+ubuntu01 | SUCCESS => {
+    "ansible_become_pass": "passw0rd"
+}
+```
+
+File with the encrypted value
+```json
+$ANSIBLE_VAULT;1.1;AES256
+31306130613165653366613531346463643135373532306431343131656531333137303137363730
+3332333634333830336635316230306163303939613234380a313265623331616431353439323161
+35326262343539636339643864373036333736643362316438623766626434333938653938623439
+3738333230353135620a356433383833333039646261613866353463353433316664393535623164
+6564
+```
+
+We can decrypt the value of a vault with a file
+```json
+cat encryptedfile | ansible-vault decrypt -
+Vault password:
+Decryption successful
+passw0rd
+```
+
+Checking the content of a yaml encrypted file with ansible-vault
+```json
+ansible-vault view --ask-vault-pass external_vault_vars.yml
+Vault password:
+external_vault_var: Example External Vault Var
+```
+
+Creating the file with the password to be consume by the ansible-vault
+```json
+echo password > password_file
+```
+
+We can use a file with the password to see the encrypted value of a file
+```json
+ansible-vault view --vault-id password_file external_vault_vars.yml
+external_vault_var: Example External Vault Var
+```
+
+We can use the following as well
+```json
+ansible-vault view --vault-id @password_file external_vault_vars.yml
+external_vault_var: Example External Vault Var
+```
+
+We can ask the password with --vault-id
+```json
+ansible-vault view --vault-id @prompt external_vault_vars.yml
+Vault password (default):
+external_vault_var: Example External Vault Var
+```
+
+We can decrypt the file with the following
+```json
+ansible-vault decrypt --vault-id @password_file external_vault_vars.yml
+Decryption successful
+```
+
+Let's encrypt the file again and give the vault-id a name
+```json
+ansible-vault encrypt --vault-id vars@prompt external_vault_vars.yml
+New vault password (vars):
+Confirm new vault password (vars):
+Encryption successful
+```
+
+Now let's create a vault for the become password
+```json
+ansible-vault encrypt_string --vault-id ssh@prompt --name 'ansible_become_pass' 'passw0rd'
+New vault password (ssh):
+Confirm new vault password (ssh):
+ansible_become_pass: !vault |
+          $ANSIBLE_VAULT;1.2;AES256;ssh
+          31623437303737623263363335643331333136646261366139316536373533316434333139613762
+          6437366139646436393235386437326162316135656332300a643361633831343530613930633265
+          62303930656664326230633961613864396336653137626563303135386334373532643935336166
+          3338373466633166610a373635366335393938333535656162393834616163333364663533363238
+          3736
+Encryption successful
+```
+
+Now we need to update the linux.yaml with the new ansible_become_pass
+
+After update the linux.yaml we can execute the playbook
+```json
+ansible-playbook --vault-id vars@prompt --vault-id ssh@prompt vault_playbook.yml
+Vault password (vars):
+Vault password (ssh):
+
+PLAY [linux] **************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************
+ok: [ubuntu01]
+ok: [centos01]
+
+TASK [Show external_vault_var] ********************************************************************************************************************************
+ok: [centos01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+ok: [ubuntu01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+
+PLAY RECAP ****************************************************************************************************************************************************
+centos01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+ubuntu01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+We can encrypt the entire playbook
+```json
+ansible-vault encrypt --vault-id playbook@prompt vault_playbook.yml
+New vault password (playbook):
+Confirm new vault password (playbook):
+Encryption successful
+```
+
+Executing the playbook encrypted with encrypted vars
+```json
+ansible-playbook --vault-id vars@prompt --vault-id ssh@prompt --vault-id playbook@prompt vault_playbook.yml
+Vault password (vars): password
+Vault password (ssh): passw0rd
+Vault password (playbook): password
+
+PLAY [linux] **************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************
+ok: [ubuntu01]
+ok: [centos01]
+
+TASK [Show external_vault_var] ********************************************************************************************************************************
+ok: [centos01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+ok: [ubuntu01] => {
+    "external_vault_var": "Example External Vault Var"
+}
+
+PLAY RECAP ****************************************************************************************************************************************************
+centos01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+ubuntu01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+## TODO
 - [ ] Create files fo each sysctl configuration.
 - [ ] Create file for Zabbix Agent
 - [ ] Create file for Vim
 - [ ] Create file for Node Exporter
 - [ ] Create file for Motd
 - [ ] Create file for bashrc
+- [ ] Copying the ssh keys to the servers
 - [ ] Check the Monit
+- [ ] Configure LVM -> take a look at wait_for module.
+- [ ] Module group by -> for CentOS and Ubuntu group_by_playbook.yml
+- [ ] Zabbix Agent -> list all the files fetch them before reinstall
+- [ ] forks in ansible.cfg and serial in the playbook
 
 
 
@@ -900,8 +1270,29 @@ centos01 | SUCCESS => {
   - ubuntu virtual machines, root access by means of sudo from packt user
 
 
+## Using Modules
+- https://docs.ansible.com/ansible/latest/modules/yum_module.html
+- https://docs.ansible.com/ansible/latest/modules/apt_module.html
+- https://docs.ansible.com/ansible/latest/modules/sysctl_module.html#sysctl-module
+- https://docs.ansible.com/ansible/latest/modules/file_module.html#file-module
+- https://docs.ansible.com/ansible/latest/modules/wait_for_module.html
+- https://docs.ansible.com/ansible/latest/modules/systemd_module.html
+- https://docs.ansible.com/ansible/latest/modules/template_module.html
+- https://docs.ansible.com/ansible/latest/modules/fetch_module.html
+- https://docs.ansible.com/ansible/latest/modules/find_module.html#find-module
+- https://docs.ansible.com/ansible/latest/user_guide/playbooks_templating.html
+- https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html#math
+- https://docs.ansible.com/ansible/latest/modules/parted_module.html
+- https://docs.ansible.com/ansible/latest/modules/authorized_key_module.html
+
+
 ## References
+- https://github.com/ansible
+- https://github.com/ansible/ansible-examples
 - https://www.shellhacks.com/python-install-pip-mac-ubuntu-centos/
+- https://docs.ansible.com/ansible/latest/user_guide/playbooks_templating.html
+- https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
+- https://docs.ansible.com/ansible/latest/modules/authorized_key_module.html
 - https://docs.ansible.com
 - https://docs.ansible.com/ansible/latest/index.html
 - https://github.com/github/gitignore/tree/master/Global
@@ -932,3 +1323,7 @@ centos01 | SUCCESS => {
 - https://docs.ansible.com/ansible/latest/reference_appendices/config.html#ansible-configuration-settings-locations
 - https://docs.ansible.com/ansible/latest/modules/wait_for_module.html
 - https://blog.zabbix.com/zabbix-agent-active-vs-passive/9207/#:~:text=Active%20checks,-Changing%20the%20active&text=This%20is%20the%20list%20of,minutes%20to%20request%20the%20configuration.&text=In%20the%20same%20zabbix_agentd.,also%20a%20parameter%20called%20Hostname.
+- https://stackoverflow.com/questions/32866053/ansible-templates-with-timestamps
+- https://linuxconfig.org/redhat-8-configure-ntp-server
+- http://www.mydailytutorials.com/working-date-timestamp-ansible/
+- https://stackoverflow.com/questions/57102717/how-to-gather-facts-about-disks-using-ansible
