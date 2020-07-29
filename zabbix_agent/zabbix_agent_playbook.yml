@@ -1,0 +1,129 @@
+---
+# YAML documents begin with the document separator ---
+# zabbix_agent_playbook.yaml
+#
+# Site: https://github.com/douglasqsantos/MasteringAnsible
+# Author: Douglas Q. dos Santos <douglas.q.santos@gmail.com>
+# Management: Douglas Q. dos Santos <douglas.q.santos@gmail.com>
+#
+#-----------------------------------------------------------------------------
+# Note: The Playbook to configure the Zabbix Agent
+#-----------------------------------------------------------------------------
+# History:
+#
+# Version 1:
+# Data: 28/07/2020
+# Description: Configure the Zabbix Agent
+#
+#-----------------------------------------------------------------------------
+# The minus in YAML this indicates a list item.  The playbook contains a list 
+# of plays, with each play being a dictionary
+-
+
+  # Target: where our play will run and options it will run with
+  hosts:
+    - ubuntu
+    - centos
+
+  # Variable: variables that will apply to the play, on all target systems
+  vars_files:
+    - variables.yml
+
+  # Task: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Remove Packages on CentOS
+      yum:
+        name: "{{ packages_to_remove }}"
+        state: absent
+        autoremove: yes
+      when: ansible_distribution == 'CentOS'
+
+    - name: Remove Packages on Ubuntu
+      apt:
+        name: "{{ packages_to_remove }}"
+        state: absent
+        purge: yes
+        autoremove: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Clean useless packages from the cache
+      apt:
+        autoclean: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install Zabbix Release on CentOS
+      yum:
+        name: "{{ zbx_release }}"
+        state: present
+      when: ansible_distribution == 'CentOS'
+
+    - name: Install Zabbix Release on Ubuntu
+      apt:
+        deb: "{{ zbx_release }}"
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install Zabbix Agent on Ubuntu
+      apt:
+        name: "{{ zbx_packages }}"
+        update_cache: yes
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+      notify: Stop Zabbix Agent
+
+    - name: Install Zabbix Agent on CentOS
+      yum:
+        name: "{{ zbx_packages }}"
+        update_cache: yes
+        state: present
+      when: ansible_distribution == 'CentOS'
+      notify: Stop Zabbix Agent
+
+    - name: Enable Zabbix Agent
+      systemd:
+        name: zabbix-agent
+        enabled: yes
+        masked: no
+
+    - name: Find Custom files for Zabbix Agent
+      find:
+        paths: /etc/zabbix/zabbix_agentd.d
+        patterns: '*'
+      register: files_to_delete
+      
+    - name: Remove Custom files for Zabbix Agent
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ files_to_delete.files }}"
+
+    - name: Template zabbix_agentd.conf
+      template:
+        src: templates/zabbix_agentd.conf.j2
+        dest: "{{ zbx_agent_file }}"
+        backup: yes
+        force: yes
+        mode: 0644
+        owner: root
+        group: root
+      notify: Restart Zabbix Agent
+
+  # Handlers: handlers that are executed as a notify key from a task
+  handlers:
+    - name: Stop Zabbix Agent
+      systemd:
+        name: zabbix-agent
+        state: stopped
+        daemon_reload: yes
+
+    - name: Restart Zabbix Agent
+      systemd:
+        name: zabbix-agent
+        state: restarted
+        daemon_reload: yes
+
+  # Roles: list of roles to be imported into the play
+
+# Three dots indicate the end of a YAML document
+...

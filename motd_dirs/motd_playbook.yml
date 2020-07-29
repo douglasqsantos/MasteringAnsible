@@ -1,0 +1,52 @@
+---
+# YAML documents begin with the document separator ---
+
+# The minus in YAML this indicates a list item.  The playbook contains a list 
+# of plays, with each play being a dictionary
+-
+
+  # Target: where our play will run and options it will run with
+  hosts: 
+    - centos
+    - ubuntu
+
+  # Variable: variables that will apply to the play, on all target systems
+  vars_files:
+    - variables.yml
+
+  # Task: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Configure a MOTD (message of the day)
+      copy:
+        src: ./files/motd
+        dest: /etc/motd
+      notify: MOTD changed
+
+    - name: Register unwanted motd files
+      stat:
+        path: "{{motd_path}}/{{item}}"
+      register: filecheck
+      with_items: "{{ unwanted_motd_files | default([]) }}"
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Check if unwanted motd files are executable and remove the executable bit
+      file:
+        path: "{{motd_path}}/{{item.item}}"
+        state: touch
+        mode: u-x,g-x,o-x
+      with_items: "{{ filecheck.results }}"
+      when: 
+        - ansible_distribution == "Ubuntu"
+        - item.stat.exists == true and item.stat.executable == True
+
+  # Handlers: handlers that are executed as a notify key from a task
+  handlers:
+    - name: MOTD changed
+      debug:
+        msg: The MOTD was changed
+
+  # Roles: list of roles to be imported into the play
+
+# Three dots indicate the end of a YAML document
+...

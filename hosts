@@ -1,9 +1,30 @@
 [all]
 ubuntu01
 centos01
+mac
+
+[control]
+mac ansible_connection=local
 
 [centos]
-centos01
+centos01 ansible_port=22
+
+[centos:vars]
+ansible_user=root
 
 [ubuntu]
-ubuntu01
+ubuntu01 
+
+[ubuntu:vars]
+ansible_become=true
+ansible_become_pass=passw0rd
+
+[linux:children]
+centos
+ubuntu
+
+[all:vars]
+ansible_port=22
+
+[linux:vars]
+ansible_port=22

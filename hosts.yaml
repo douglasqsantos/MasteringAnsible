@@ -1,0 +1,23 @@
+---
+control:
+  hosts:
+    mac:
+      ansible_connection: local
+centos:
+  hosts:
+    centos01:
+      ansible_port: 22
+      ansible_user: douglas
+  vars:
+    ansible_user: douglas
+    ansible_port: 22
+ubuntu:
+  hosts:
+    ubuntu01:
+  vars:
+    ansible_become: true
+    ansible_become_pass: passw0rd
+linux:
+  children:
+    centos:
+    ubuntu:

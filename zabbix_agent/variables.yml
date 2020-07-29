@@ -1,0 +1,24 @@
+---
+zbx_agent_file: '/etc/zabbix/zabbix_agentd.conf'
+zbx_pid_file: '/var/run/zabbix/zabbix_agentd.pid'
+zbx_log_file: '/var/log/zabbix/zabbix_agentd.log'
+zbx_log_file_size: '0'
+zbx_server: 'zabbix.h.dqs.local'
+zbx_agent_port: '10050'
+zbx_start_agent: '3'
+zbx_refresh_active_checks: '120'
+zbx_buffer_send: '5'
+zbx_buffer_size: '100'
+zbx_max_line_per_seconds: '100'
+zbx_timeout: '3'
+zbx_include_files: '/etc/zabbix/zabbix_agentd.d/*.conf'
+zbx_packages:
+  - zabbix-sender
+  - zabbix-agent
+packages_to_remove:
+  - puppet6-release
+  - puppet-agent
+  - zabbix-agent
+  - zabbix-release
+  - zabbix-sender
+...

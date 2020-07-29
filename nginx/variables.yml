@@ -1,0 +1,9 @@
+---
+nginx_path: '/etc/nginx'
+nginx_files:
+  - nginx.conf
+packages_to_remove_centos:
+  - puppet6-release
+  - puppet-agent
+  - zabbix-agent
+...

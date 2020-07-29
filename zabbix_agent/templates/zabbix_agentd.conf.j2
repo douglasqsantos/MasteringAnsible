@@ -1,0 +1,16 @@
+# {{ zbx_agent_file }}
+# {{ ansible_managed }}
+PidFile={{ zbx_pid_file }}
+LogFile={{ zbx_log_file }}
+LogFileSize={{ zbx_log_file_size }}
+Server={{ zbx_server }}
+# ServerActive={{ zbx_server }}
+Hostname={{ ansible_hostname }}
+ListenPort={{ zbx_agent_port }}
+StartAgents={{ zbx_start_agent }}
+RefreshActiveChecks={{ zbx_refresh_active_checks }}
+BufferSend={{ zbx_buffer_send }}
+BufferSize={{ zbx_buffer_size }}
+MaxLinesPerSecond={{ zbx_max_line_per_seconds }}
+Timeout={{ zbx_timeout }}
+Include={{ zbx_include_files }}
