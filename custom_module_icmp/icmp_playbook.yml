@@ -1,0 +1,45 @@
+---
+# YAML documents begin with the document separator ---
+
+# The minus in YAML this indicates a list item.  The playbook contains a list
+# of plays, with each play being a dictionary
+-
+
+  # Target: where our play will run and options it will run with
+  hosts: linux
+
+  # Task: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+
+    # - name: Test icmp module
+    #   icmp:
+    #     target: 127.0.0.1
+    
+    - name: Log Disk do use in LVM
+      fdisk:
+        bytes: 53687091200
+      register: log_disk_to_use
+
+    - name: Check Fdisk to use
+      debug:
+        msg: "{{ log_disk_to_use.stdout }}"
+
+    - name: Docker Disk do use in LVM
+      fdisk:
+        bytes: 101695488
+      register: docker_disk_to_use
+
+    - name: Check Fdisk to use
+      debug:
+        msg: "{{ docker_disk_to_use.stdout }}"
+
+
+
+    # - name: Check the files to Handle
+    #   debug:
+    #     var: item.path
+    #   with_items: "{{ files_to_delete.files }}"
+
+# Three dots indicate the end of a YAML document
+...

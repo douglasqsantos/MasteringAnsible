@@ -1245,7 +1245,424 @@ centos01                   : ok=2    changed=0    unreachable=0    failed=0    s
 ubuntu01                   : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
+## Creating Custom Modules
+- Creating custom modules
+- Using the Ansible development tools, to test modules
+- Understand the module requirements for input and output
+- Creating a basic module using shell scripting
+- Transition our shell scripted module to the Ansible module Python framework
+
+
+Let's clone the Ansible Repo
+```bash
+git clone https://github.com/ansible/ansible.git
+```
+
+Now let's teste the module, need to import the venv configuration
+```bash
+(venv_stable) douglas@MacBookPro /V/D/git> ./ansible/hacking/test-module -m ./ansible/lib/ansible/modules/command.py -a hostname
+* including generated source, if any, saving to: /Users/douglas/.ansible_module_generated
+* ansiballz module detected; extracted module source to: /Users/douglas/debug_dir
+***********************************
+RAW OUTPUT
+
+{"cmd": ["hostname"], "stdout": "MacBookPro.lan", "stderr": "", "rc": 0, "start": "2020-07-29 18:25:36.060504", "end": "2020-07-29 18:25:36.092572", "delta": "0:00:00.032068", "changed": true, "invocation": {"module_args": {"_raw_params": "hostname", "_uses_shell": false, "warn": false, "stdin_add_newline": true, "strip_empty_ends": true, "argv": null, "chdir": null, "executable": null, "creates": null, "removes": null, "stdin": null}}}
+
+
+***********************************
+PARSED OUTPUT
+{
+    "changed": true,
+    "cmd": [
+        "hostname"
+    ],
+    "delta": "0:00:00.032068",
+    "end": "2020-07-29 18:25:36.092572",
+    "invocation": {
+        "module_args": {
+            "_raw_params": "hostname",
+            "_uses_shell": false,
+            "argv": null,
+            "chdir": null,
+            "creates": null,
+            "executable": null,
+            "removes": null,
+            "stdin": null,
+            "stdin_add_newline": true,
+            "strip_empty_ends": true,
+            "warn": false
+        }
+    },
+    "rc": 0,
+    "start": "2020-07-29 18:25:36.060504",
+    "stderr": "",
+    "stdout": "MacBookPro.lan"
+}
+```
+
+In the custom_module_icmp let's teste our module against the ansible
+```json
+/Volumes/Data/git/ansible/hacking/test-module -m ./icmp.sh
+* including generated source, if any, saving to: /Users/douglas/.ansible_module_generated
+***********************************
+RAW OUTPUT
+{"changed": true, "rc": 0}
+
+
+***********************************
+PARSED OUTPUT
+{
+    "changed": true,
+    "rc": 0
+}
+```
+
+Let's check the script with parameter
+```json
+/Volumes/Data/git/ansible/hacking/test-module -m ./icmp.sh -a 'target=127.0.0.1'
+* including generated source, if any, saving to: /Users/douglas/.ansible_module_generated
+***********************************
+RAW OUTPUT
+{"changed": true, "rc": 0}
+
+
+***********************************
+PARSED OUTPUT
+{
+    "changed": true,
+    "rc": 0
+}
+```
+
+Executing the custom module with ansible-playbooks
+```json
+ansible-playbook icmp_playbook.yml
+
+PLAY [linux] **************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************
+ok: [ubuntu01]
+ok: [centos01]
+
+TASK [Test icmp module] ***************************************************************************************************************************************
+changed: [ubuntu01]
+changed: [centos01]
+
+PLAY RECAP ****************************************************************************************************************************************************
+centos01                   : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+ubuntu01                   : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+
+Checking the Python icmp module
+```json
+/Volumes/Data/git/ansible/hacking/test-module -m ./icmp.py -a 'target=127.0.0.1'
+* including generated source, if any, saving to: /Users/douglas/.ansible_module_generated
+* ansiballz module detected; extracted module source to: /Users/douglas/debug_dir
+***********************************
+RAW OUTPUT
+
+{"changed": true, "rc": 0, "invocation": {"module_args": {"target": "127.0.0.1"}}}
+
+
+***********************************
+PARSED OUTPUT
+{
+    "changed": true,
+    "invocation": {
+        "module_args": {
+            "target": "127.0.0.1"
+        }
+    },
+    "rc": 0
+}
+```
+
+Checking the documentation of the new module
+```json
+ansible-doc -M library icmp
+```
+
+## Creating Plugins
+- Creating plugins
+- The various types of plugins that are available
+- Custom directory locations for plugins
+- How to create a lookup plugin
+- How to create a filter plugin
+
+## Structuring Ansible Playbooks
+- Using includes and imports
+- Using tags
+- Using roles
+
+## Using Includes and Imports
+- Include tasks
+- Include playbooks
+- include_tasks
+- import_playbook
+- import_tasks
+
+## Static Versus Dynamic in Tasks
+- include_tasks = Dynamic
+- include = static - by default, can be made Dynamic
+- import_tasks = static
+- Dynamic - directives applies at execution, that is when applies in the same way to every task at the point of the inclusion, changes to variables, do not affect the inclusion state
+- Static - directives applied at execution, that is when are actioned sequentially for each task
+
+
+## Static Versus Dynamic Summary
+- include = Deprecated
+- include_* = Dynamic
+- import_* = Static
+- Dynamic - directives applies at execution, that is when applies in the same way to every task at the point of the inclusion, changes to variables, do not affect the inclusion state
+- Static - directives applied at execution, that is when are actioned sequentially for each task
+
+## Other Considerations
+- include_* = Dynamic - Can be used with loops
+- import_* = Static - Cannot be used with loops
+
+
+## Using Tags
+- Using tags
+- Segmentation with tags
+- Execution with tags
+- Skipping with tags
+- Playbook tags
+- Special tags
+- Tag inheritance
+
+
+Calling only a task with a tag in a playbook
+```json
+ansible-playbook nginx_playbook.yml --tags 'install-epel'
+```
+
+Calling more then one task with a tag in a playbook
+```json
+ansible-playbook nginx_playbook.yml --tags 'install-nginx,patch-nginx'
+```
+
+Calling the playbook and skipping some tags
+```json
+ansible-playbook nginx_playbook.yml --skip-tags 'patch-nginx'
+```
+
+The tag always will be executed even if the tag for the task is not called, if you want to skip that tag use
+```json
+ansible-playbook nginx_playbook.yml --tags 'install-nginx' --skip-tags 'always'
+```
+
+## Special Tags
+- tagged - only tasks that have a tag, will be run
+- untagged - run tasks that do not have a tag, always does not count a tag here
+- all - essentially, this is a no-op operation
+    - by default, ansible is running with --tags all
+
+## Using Roles
+- Using roles
+- The role structure
+- How to create roles with Ansible Galaxy
+- How to move an existing project to a role
+- How to set role dependecies
+
+## Benefits of Roles
+- Larger projects, are made easier to manage
+- Roles are grouped with logical structure, making them easier to share
+- Roles can be written to target specific requirements, for example a webserver role, a DNS server role, a patching role
+- Roles can be developed independetly, in parallel by different entities and work well with version control systems
+- Templates, vars and files, have designated directories and inclusions is simplified
+- Roles, ca have dependencies on other roles, allowing automatic inclusion
+
+## Example Roles Strucure
+```
+example-role
+    - defaults
+        - main.yaml
+    - files
+    - handlers
+        - main.yaml
+    - meta
+        - main.yaml
+    README.md
+    - tasks
+        - main.yaml
+    - templates
+    - tests
+        - inventory
+        - test.yaml
+    - vars
+        - main.yaml
+```
+
+Starting the role
+```json
+ansible-galaxy init nginx
+```
+
+## Transition Strategy
+- Move the handlers of the playbook, into handlers/main.yml
+- Move the existing templates into templates and remove the old directory
+- Move the existing files into files and again, remove the old directory
+- We don't have specific vars in the playbook for this, but, we do currently have the logs in the group vars files, move these into vars/main.yml
+- Move the playbook tasks, to tasks/main.yml
+
+
+## AWS with Ansible
+- AWS with Ansible
+- Docker support with Ansible
+
+## AWS with Ansible
+- How to configure Ansible for AWS support
+- Creating instances through Ansible with AWS and adding IP addresses
+- Using the AWS dynamic inventory
+- Spinning up our AwesomeWeb app, using AWS
+- Terminating and removing AWS instances
+
+
+Install dependencies
+```json
+pip install boto boto3
+```
+
+## Docker support with Ansible
+- Docker support with Ansible
+- Setting up the requirements for Docker with Ansible
+- Creating a Docker container
+- Running our Awesomeweb app in a Docker container
+- Customising Docker network ports with Ansible
+- Cleanup of Docker container
+
+On the Docker server need to install the docker-py
+```json
+pip install docker-py
+```
+
+## Other Ansible Resources ans Areas
+- Troubleshooting Ansible
+- Validating testing with Ansible
+- Best practices with Ansible
+- Upgrading Ansible
+
+## Troubleshoting Ansible
+- Using SSHD in debug mode to troubleshoot connectivity
+- Using the Ansible syntax check option
+- Stepping through an Ansible playbook
+- Starting at a specific tasks
+- Using Log path
+- Increasing Ansible verbosity
+
+Checking the ssh connection with verbose mode
+```json
+ssh -v douglas@server
+```
+
+On the remote server let's start the ssh daemon in debug mode
+```json
+/usr/sbin/sshd -d -p 1234
+```
+
+Let's try the connection again
+```
+ssh douglas@server -p 1234
+```
+
+Checking the syntax of the playbook
+```bash
+ansible-playbook blocks_playbook.yml --syntax-check
+```
+
+We can execute the playbook with step-by-step
+```bash
+ansible-playbook blocks_playbook.yml --step
+```
+
+We can start the playbook at specific task
+```bash
+ansible-playbook blocks_playbook.yml --start-at-task="Install python-dnspython"
+```
+
+We can add logpath in the ansible.cfg
+```ini
+vim ansible.cfg
+[...]
+logs_path=./logs/log.log
+```
+
+## Ansible Verbosity
+- -v = Output data is displayed
+- -vv = Output and input data are displayed
+- -vvv = Additional information provided for connections to managed hosts
+- -vvvv = Extra verbosity that includes connection plugins and scripts, as well as user context
+
+```bash
+ansible-playbook -vvvv blocks_playbook.yml 
+```
+
+## Validating Testing with Ansible
+
+Into the ansible git repo dir
+```bash
+source hacking/env-setup
+```
+
+Let's install the deps
+```bash
+pip install tox
+```
+
+Testing the Ansible
+```bash
+ansible-test units --tox --python 2.7
+```
+
+## Best Practices with Ansible
+- https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html
+
+## Upgrading Ansible
+
+Installing the specific version
+```bash
+pip install ansible==1.9.5
+```
+
+Upgrade the package
+```bash
+pip install --upgrade ansible
+```
+
+Installing from github
+```bash
+pip install git+https://github.com/ansible/ansible
+```
+
+Installing from github from specific branch
+```bash
+pip install git+https://github.com/ansible/ansible@branch_name  --upgrade
+```
+
+Installing the python3-env
+```bash
+apt install python3-venv
+```
+
+Creating the venv to create a environment for Python3
+```bash
+python3 -m venv testing_upgrade_35
+```
+
+Importing the venv
+```bash
+source testing_upgrade_35/bin/active
+```
+
+Now installing the ansible
+```bash
+pip install ansible
+```
+
 ## TODO
+- [ ] Ansible Inventory Azure...
+- [ ] Converting to Roles
 - [ ] Create files fo each sysctl configuration.
 - [ ] Create file for Zabbix Agent
 - [ ] Create file for Vim
@@ -1327,3 +1744,7 @@ ubuntu01                   : ok=2    changed=0    unreachable=0    failed=0    s
 - https://linuxconfig.org/redhat-8-configure-ntp-server
 - http://www.mydailytutorials.com/working-date-timestamp-ansible/
 - https://stackoverflow.com/questions/57102717/how-to-gather-facts-about-disks-using-ansible
+- https://docs.ansible.com/ansible/latest/reference_appendices/common_return_values.html#id9
+- https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_general.html
+- https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_documenting.html#developing-modules-documenting
+- https://docs.ansible.com/ansible/latest/modules/authorized_key_module.html
